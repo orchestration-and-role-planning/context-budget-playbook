@@ -1,11 +1,11 @@
 ---
-doc: BA1 context-budget model — reference
-audience: any future BA1 session sizing its work or deciding when to hand off
+doc:  context-budget model — reference
+audience: any future  session sizing its work or deciding when to hand off
 status: living
 ---
-# BA1 Context-Budget Model
+#  Context-Budget Model
 
-This is the reference for sizing a BA1 session's context burn and deciding when to hand off to a fresh session. It is self-contained — you do not need to read the calibration findings or any handoff doc to use it.
+This is the reference for sizing a  session's context burn and deciding when to hand off to a fresh session. It is self-contained — you do not need to read the calibration findings or any handoff doc to use it.
 
 ## TL;DR
 
@@ -33,15 +33,15 @@ This is the reference for sizing a BA1 session's context burn and deciding when 
 
 Claude agents do not degrade at a single cliff. Across long-context benchmarks (Fiction LiveBench, NVIDIA RULER, Databricks RAG, Chroma's "context rot" study), quality slides *continuously* as input grows — measurable decline begins somewhere in the 16k–64k range, and the practical "good" working band lands around 60k–80k total context. There is no safe 120k plateau: a 200k- or 1M-token window does not mean 200k of usable thinking — degradation is continuous, not a sudden cliff at some high threshold.
 
-Two findings matter most for BA1. First, **noise — not raw token count — is the primary failure mode for coding/agentic sessions.** Search, exploration, spawning, and backtracking accumulate tool-call debris that degrades every later output. BA1 sessions are exactly this high-rot kind, so we sit at the *fast* end of the degradation curve. Second, **position matters:** context is retrieved best at the very start and end, worst in the middle. BA1's ~30k existence baseline (tool catalogs, system prompt) is clean and pinned at the start, so it costs little in quality; the working growth piled on top is what rots.
+Two findings matter most, **noise — not raw token count — is the primary failure mode for coding/agentic sessions.** Search, exploration, spawning, and backtracking accumulate tool-call debris that degrades every later output. sessions are exactly this high-rot kind, so we sit at the *fast* end of the degradation curve. Second, **position matters:** context is retrieved best at the very start and end, worst in the middle. 's ~30k existence baseline (tool catalogs, system prompt) is clean and pinned at the start, so it costs little in quality; the working growth piled on top is what rots.
 
-BA1 therefore sets the switch target at 70k total context — a deliberately conservative stop well inside the research's 60k–80k quality band, with headroom below the 80k top past which the noisy/agentic growth degrades fastest. That is 40k of working growth on top of the 30k clean baseline. Because our growth is the noisy, agentic kind that rots fastest, we stop conservatively inside the band rather than push toward its top. The 70k target is the line you design against; the mechanical tripwire that forces a handoff sits wider, at 75k. That 5k gap is a deliberate buffer — an orchestration sized against 70k absorbs its normal slop without tripping the forced handoff, so plan to 70k and treat the extra 5k as safety margin, not budget to spend. A calm, non-blocking nudge fires earlier at 55k — that 55k→70k span is wrap-up runway, not stolen budget, so when it fires, finish tidily; do not rush, truncate, or cut quality. A session's total context is the sum of all /context buckets — Messages, System prompt, System tools, MCP tools, MCP tools (deferred), Memory, Custom agents, Skills, Misc.
+Therefore sets the switch target at 70k total context — a deliberately conservative stop well inside the research's 60k–80k quality band, with headroom below the 80k top past which the noisy/agentic growth degrades fastest. That is 40k of working growth on top of the 30k clean baseline. Because our growth is the noisy, agentic kind that rots fastest, we stop conservatively inside the band rather than push toward its top. The 70k target is the line you design against; the mechanical tripwire that forces a handoff sits wider, at 75k. That 5k gap is a deliberate buffer — an orchestration sized against 70k absorbs its normal slop without tripping the forced handoff, so plan to 70k and treat the extra 5k as safety margin, not budget to spend. A calm, non-blocking nudge fires earlier at 55k — that 55k→70k span is wrap-up runway, not stolen budget, so when it fires, finish tidily; do not rush, truncate, or cut quality. A session's total context is the sum of all /context buckets — Messages, System prompt, System tools, MCP tools, MCP tools (deferred), Memory, Custom agents, Skills, Misc.
 
 In practice, the Messages bucket is the only one that grows meaningfully during work; the others are roughly fixed once the session starts. So in formulas below, "growth" means Messages-bucket growth.
 
 ## 2. Existence baseline
 
-Empty BA1 session, no work performed: ~30k total context. Decomposition (typical):
+Empty session, no work performed: ~30k total context. Decomposition (typical):
 
 - Messages bucket: ~5k (system instructions render here)
 - MCP tools (deferred) — the static catalog of available-but-unloaded tools: ~17.6k
@@ -133,7 +133,7 @@ That is 45k of fixed cost, leaving 25k of headroom to 70k. At ~6k per spawn, the
 
 ### Shape B: Planning conversation reading spec docs and producing a 5k-word handoff
 
-Assumptions: a planning ROOT reads BA1 spec docs (dense ~25-word-line markdown), exchanges ~6 turns of discussion with the product owner (each turn ~300 words from them + similar from ROOT), then produces a 5k-word handoff document by Write.
+Assumptions: a planning ROOT reads spec docs (dense ~25-word-line markdown), exchanges ~6 turns of discussion with the product owner (each turn ~300 words from them + similar from ROOT), then produces a 5k-word handoff document by Write.
 
 Reading **one** 200-line spec and writing the handoff:
 
@@ -170,7 +170,7 @@ The `Σ (action × cost)` sum totals the clean, happy-path action list: the read
 - Oversized worker payloads — a child returns 3k where the plan assumed 200 tokens.
 - Unplanned exploration — a Glob, Grep, or Read to resolve something the plan did not foresee.
 
-Section 1 already names the cause: noise, not raw token count, is the primary failure mode, and BA1 sits at the fast end of that curve. So the floor sum is not the expected burn — it is the best case you will rarely hit.
+Section 1 already names the cause: noise, not raw token count, is the primary failure mode, and  sits at the fast end of that curve. So the floor sum is not the expected burn — it is the best case you will rarely hit.
 
 Plan against the inflated figure instead: `planned_total ≈ 30k + 1.5 × Σ (action × cost)`.
 
