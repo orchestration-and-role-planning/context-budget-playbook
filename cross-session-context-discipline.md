@@ -1,6 +1,6 @@
 ---
 doc: Cross-session context discipline — how a multi-session topology stays under budget by design
-audience: anyone planning a multi-session BA1 topology (spawners, collectors, doers)
+audience: anyone planning a multi-session topology (spawners, collectors, doers)
 status: living
 ---
 # Cross-Session Context Discipline

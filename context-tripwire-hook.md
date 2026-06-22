@@ -1,5 +1,5 @@
 ---
-doc: BA1 context tripwire — the global context governor (hook reference)
+doc: context tripwire — the global context governor (hook reference)
 audience: anyone tuning, debugging, or reasoning about the context-handoff hook
 status: living
 ---
@@ -30,7 +30,7 @@ A "context tripwire" is installed at the user level (every session, every projec
 - Brain: `~/.claude/hooks/context-tripwire.js` (Node; `WARN_THRESHOLD` and `HARD_THRESHOLD` constants at top, keep WARN < HARD; `computeTokens` does the measuring + estimate; `buildWarning()` holds the nudge wording; FAILS OPEN on any error — any error, unreadable file, or uncertainty returns "allow").
 - On-switch: `~/.claude/settings.json` (`hooks` → `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Stop`, `SubagentStop`, matcher `*`).
 - Handoff notes land in **one folder per project** — the project root's `.handoffs/handoff_<YYYY-MM-DD_HHMM>_<shortid>.md` (readable, chrono-sortable). Completion markers go in `.handoffs/.markers/<base>.done`; the once-only warn guard is `.handoffs/.markers/<base>.warned`. Project root is found by walking up from cwd to the nearest ancestor holding a `.claude` or `.git` marker (HOME skipped), so a session in any subfolder still writes to the same place. Name base derives from the transcript's `birthtime` (stable per session → no handoff loops). Falls back to `<cwd>/.handoffs/`, then `~/.claude/handoffs/`.
-- The dotted `.handoffs` name keeps these session batons distinct from a project's own "handoffs" folders (e.g. the Auditor's spec handoffs), which this hook never touches.
+- The dotted `.handoffs` name keeps these session batons distinct from a project's own "handoffs" folders (e.g. a planning role's spec handoffs), which this hook never touches.
 
 **Baton retention:** handoff notes + `.done` markers are RETAINED on disk for manual review (`RETAIN_BATONS = true`): the replacement reads its predecessor's note but deletes nothing, and the 24h `reap()` janitor is held off. Flip `RETAIN_BATONS` to false to restore hands-off cleanup (replacement deletes the baton once read; janitor reaps completed pairs older than 24h).
 
@@ -38,6 +38,6 @@ A "context tripwire" is installed at the user level (every session, every projec
 
 **Kill switch:** create an empty file at `~/.claude/hooks/DISABLE` to disable instantly (new invocations). Delete it to re-enable.
 
-**Why:** automates context-handoff discipline so a long-running worker can't drift into the degraded zone. Degradation is continuous, not a cliff — quality slides as context grows, and noisy/agentic work (which BA1 is) rots fastest, so the forced stop sits inside the research-backed 60k–80k quality band (see [context-budget-model](./context-budget-model.md)), at 75k, leaving headroom under the 80k top past which tool-call noise degrades output; the calm nudge fires 20k earlier at 55k as wrap-up runway. The hook (external) does the measuring, so agents still never estimate their own context, consistent with [cross-session-context-discipline](./cross-session-context-discipline.md).
+**Why:** automates context-handoff discipline so a long-running worker can't drift into the degraded zone. Degradation is continuous, not a cliff — quality slides as context grows, and noisy/agentic work (which agentic pipelines are) rots fastest, so the forced stop sits inside the research-backed 60k–80k quality band (see [context-budget-model](./context-budget-model.md)), at 75k, leaving headroom under the 80k top past which tool-call noise degrades output; the calm nudge fires 20k earlier at 55k as wrap-up runway. The hook (external) does the measuring, so agents still never estimate their own context, consistent with [cross-session-context-discipline](./cross-session-context-discipline.md).
 
 **How to apply:** to move the calm-nudge point edit `WARN_THRESHOLD`; to move the forced-handoff point edit `HARD_THRESHOLD` (keep WARN < HARD — the gap is the wrap-up runway). Edits take effect **live** — the `.js` is re-read on every hook invocation and `settings.json` is re-read by the harness mid-session.

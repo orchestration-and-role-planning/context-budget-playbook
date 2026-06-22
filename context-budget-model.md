@@ -1,11 +1,11 @@
 ---
-doc:  context-budget model — reference
-audience: any future  session sizing its work or deciding when to hand off
+doc: context-budget model — reference
+audience: any future session sizing its work or deciding when to hand off
 status: living
 ---
-#  Context-Budget Model
+# Context-Budget Model
 
-This is the reference for sizing a  session's context burn and deciding when to hand off to a fresh session. It is self-contained — you do not need to read the calibration findings or any handoff doc to use it.
+This is the reference for sizing a session's context burn and deciding when to hand off to a fresh session. It is self-contained — you do not need to read the calibration findings or any handoff doc to use it.
 
 ## TL;DR
 
@@ -33,9 +33,9 @@ This is the reference for sizing a  session's context burn and deciding when to 
 
 Claude agents do not degrade at a single cliff. Across long-context benchmarks (Fiction LiveBench, NVIDIA RULER, Databricks RAG, Chroma's "context rot" study), quality slides *continuously* as input grows — measurable decline begins somewhere in the 16k–64k range, and the practical "good" working band lands around 60k–80k total context. There is no safe 120k plateau: a 200k- or 1M-token window does not mean 200k of usable thinking — degradation is continuous, not a sudden cliff at some high threshold.
 
-Two findings matter most, **noise — not raw token count — is the primary failure mode for coding/agentic sessions.** Search, exploration, spawning, and backtracking accumulate tool-call debris that degrades every later output. sessions are exactly this high-rot kind, so we sit at the *fast* end of the degradation curve. Second, **position matters:** context is retrieved best at the very start and end, worst in the middle. 's ~30k existence baseline (tool catalogs, system prompt) is clean and pinned at the start, so it costs little in quality; the working growth piled on top is what rots.
+Two findings matter most, **noise — not raw token count — is the primary failure mode for coding/agentic sessions.** Search, exploration, spawning, and backtracking accumulate tool-call debris that degrades every later output. Agentic sessions are exactly this high-rot kind, so we sit at the *fast* end of the degradation curve. Second, **position matters:** context is retrieved best at the very start and end, worst in the middle. The ~30k existence baseline (tool catalogs, system prompt) is clean and pinned at the start, so it costs little in quality; the working growth piled on top is what rots.
 
-Therefore sets the switch target at 70k total context — a deliberately conservative stop well inside the research's 60k–80k quality band, with headroom below the 80k top past which the noisy/agentic growth degrades fastest. That is 40k of working growth on top of the 30k clean baseline. Because our growth is the noisy, agentic kind that rots fastest, we stop conservatively inside the band rather than push toward its top. The 70k target is the line you design against; the mechanical tripwire that forces a handoff sits wider, at 75k. That 5k gap is a deliberate buffer — an orchestration sized against 70k absorbs its normal slop without tripping the forced handoff, so plan to 70k and treat the extra 5k as safety margin, not budget to spend. A calm, non-blocking nudge fires earlier at 55k — that 55k→70k span is wrap-up runway, not stolen budget, so when it fires, finish tidily; do not rush, truncate, or cut quality. A session's total context is the sum of all /context buckets — Messages, System prompt, System tools, MCP tools, MCP tools (deferred), Memory, Custom agents, Skills, Misc.
+Therefore we set the switch target at 70k total context — a deliberately conservative stop well inside the research's 60k–80k quality band, with headroom below the 80k top past which the noisy/agentic growth degrades fastest. That is 40k of working growth on top of the 30k clean baseline. Because our growth is the noisy, agentic kind that rots fastest, we stop conservatively inside the band rather than push toward its top. The 70k target is the line you design against; the mechanical tripwire that forces a handoff sits wider, at 75k. That 5k gap is a deliberate buffer — an orchestration sized against 70k absorbs its normal slop without tripping the forced handoff, so plan to 70k and treat the extra 5k as safety margin, not budget to spend. A calm, non-blocking nudge fires earlier at 55k — that 55k→70k span is wrap-up runway, not stolen budget, so when it fires, finish tidily; do not rush, truncate, or cut quality. A session's total context is the sum of all /context buckets — Messages, System prompt, System tools, MCP tools, MCP tools (deferred), Memory, Custom agents, Skills, Misc.
 
 In practice, the Messages bucket is the only one that grows meaningfully during work; the others are roughly fixed once the session starts. So in formulas below, "growth" means Messages-bucket growth.
 
@@ -105,15 +105,15 @@ Worked example. A 5k-word document paste into a working session: ≈ 5k + 2.5 ×
 
 `write_cost ≈ 2.5 × words_of_rendered_content`, summed across every artifact the session emits. A write costs the same as a paste of the same text: the content renders as assistant output. There is no cheap flat per-file rate — a session writing six artifacts pays for the full word-volume of all six, not six small fixed charges.
 
-Worked example. A Reader leaf writing six artifacts for a re-audit with ~35 findings (findings.md + reference/surface/closed/collected lists + manifest) emitted on the order of ~78k of growth — its Messages bucket reached 82.9k, more than the heavy single spec read it also did (~21k) and far past a naive "~6k for all six files" estimate. The driver is the cumulative finding volume rendered as text, not the file count. **Size writes by total content words, and when the inflated figure crosses 70k, split artifact production across workers** (e.g. a findings-writer leaf separate from the list/manifest writer) so no single session renders the whole set. Finding-count is the input that scales this — budget it against the re-audit's actual tally, not a per-file constant.
+Worked example. A reader leaf writing six artifacts for a re-audit with ~35 findings (findings.md + reference/surface/closed/collected lists + manifest) emitted on the order of ~78k of growth — its Messages bucket reached 82.9k, more than the heavy single spec read it also did (~21k) and far past a naive "~6k for all six files" estimate. The driver is the cumulative finding volume rendered as text, not the file count. **Size writes by total content words, and when the inflated figure crosses 70k, split artifact production across workers** (e.g. a findings-writer leaf separate from the list/manifest writer) so no single session renders the whole set. Finding-count is the input that scales this — budget it against the re-audit's actual tally, not a per-file constant.
 
 ## 6. Two worked session-shape estimates
 
-### Shape A: ROOT dispatching chunkers in Stage 2
+### Shape A: A dispatcher fanning out workers
 
-Assumptions: ROOT picks up a Stage 2 handoff, reads the launch plan + memory, loads meta-agent tools, dispatches chunkers in one assistant turn with inline briefs, then polls them via filesystem (not via list_spawned_sessions).
+Assumptions: a dispatcher picks up a handoff, reads the launch plan + memory, loads meta-agent tools, dispatches workers in one assistant turn with inline briefs, then polls them via filesystem (not via list_spawned_sessions).
 
-A naive "read everything, then dispatch six" ROOT:
+A naive "read everything, then dispatch six" dispatcher:
 
 - Existence: 30k
 - Read launch plan (~250 lines): 9k + 76 × 250 ≈ 28k
@@ -129,11 +129,11 @@ The fix is to stop making the dispatcher also be the reader. A **dedicated dispa
 - Lean inline brief in the handoff prompt (~5k): 5k
 - Meta-agent schema load: 10k
 
-That is 45k of fixed cost, leaving 25k of headroom to 70k. At ~6k per spawn, the headroom rule trips after ~4 spawns (4 × 6k = 24k → lands at 69k; a 5th would hit 75k). A planning ROOT that also reads a spec or memory file first has essentially no room left to spawn — it should hand the dispatch to a dedicated dispatcher rather than fire spawns itself. So: for a 30-chunker Stage 2, plan for roughly **8–10 dispatcher handoffs** (or split dispatch across parallel dispatcher sessions), and never let a single ROOT both read context and dispatch a large batch. Those counts are floors: apply the section 8 multiplier and a dispatcher the floor says could fire four spawns should be planned for three, so a 30-chunker Stage 2 needs closer to 10–12 dispatcher handoffs.
+That is 45k of fixed cost, leaving 25k of headroom to 70k. At ~6k per spawn, the headroom rule trips after ~4 spawns (4 × 6k = 24k → lands at 69k; a 5th would hit 75k). A planning coordinator that also reads a spec or memory file first has essentially no room left to spawn — it should hand the dispatch to a dedicated dispatcher rather than fire spawns itself. So: for a 30-worker batch, plan for roughly **8–10 dispatcher handoffs** (or split dispatch across parallel dispatcher sessions), and never let a single dispatcher both read context and dispatch a large batch. Those counts are floors: apply the section 8 multiplier and a dispatcher the floor says could fire four spawns should be planned for three, so a 30-worker batch needs closer to 10–12 dispatcher handoffs.
 
 ### Shape B: Planning conversation reading spec docs and producing a 5k-word handoff
 
-Assumptions: a planning ROOT reads spec docs (dense ~25-word-line markdown), exchanges ~6 turns of discussion with the product owner (each turn ~300 words from them + similar from ROOT), then produces a 5k-word handoff document by Write.
+Assumptions: a planning coordinator reads spec docs (dense ~25-word-line markdown), exchanges ~6 turns of discussion with the product owner (each turn ~300 words from them + similar from the coordinator), then produces a 5k-word handoff document by Write.
 
 Reading **one** 200-line spec and writing the handoff:
 
@@ -148,7 +148,7 @@ Subtotal: 30k + 24.2k + 9k + 12.5k = 75.7k — over the 70k target by ~6k. Even 
 
 A coordinator session is sized for **one** leg: one fan-out wave at the 3-spawn cap, then a handoff at its seam. The failure mode is running a *second* leg in the same session — most often after an idle-resume reactivates the spent session instead of spawning a fresh successor for the next leg. The two legs' Messages growth then sums into one bucket.
 
-Worked failure. A Tracer Lead ran leg (a) — 3 slice-reader spawns + 1 successor handoff spawn — then idle-resumed and ran leg (b) — 3 partial-Merger spawns + 1 successor handoff spawn — in the *same* session. That is ~8 self-contained spawn payloads, plus a manifest read with repo-wide search carried in both legs, plus the idle-resume paste re-injecting full disk state. Result: Messages 52.4k → total 81.6k, ~6.6k over the tripwire. A sibling session that ran only its single merge leg landed at 69.9k — right at target.
+Worked failure. A coordinator ran leg (a) — 3 slice-reader spawns + 1 successor handoff spawn — then idle-resumed and ran leg (b) — 3 partial-reducer spawns + 1 successor handoff spawn — in the *same* session. That is ~8 self-contained spawn payloads, plus a manifest read with repo-wide search carried in both legs, plus the idle-resume paste re-injecting full disk state. Result: Messages 52.4k → total 81.6k, ~6.6k over the tripwire. A sibling session that ran only its single merge leg landed at 69.9k — right at target.
 
 The fix is structural, not a cost-anchor change: **close the session at the seam.** Each leg must run on its own clean 30k baseline. On idle-resume, spawn a *fresh* successor for the next leg rather than reanimating the spent instance — the pipeline's own 3-spawn-cap + handoff design already intends this; the trip comes from not honoring it. Two estimates that are each safe in isolation are not safe summed: never budget a coordinator for more than one leg, and never let resume logic add a second leg to a session that already spent its budget on the first.
 
@@ -170,7 +170,7 @@ The `Σ (action × cost)` sum totals the clean, happy-path action list: the read
 - Oversized worker payloads — a child returns 3k where the plan assumed 200 tokens.
 - Unplanned exploration — a Glob, Grep, or Read to resolve something the plan did not foresee.
 
-Section 1 already names the cause: noise, not raw token count, is the primary failure mode, and  sits at the fast end of that curve. So the floor sum is not the expected burn — it is the best case you will rarely hit.
+Section 1 already names the cause: noise, not raw token count, is the primary failure mode, and agentic work sits at the fast end of that curve. So the floor sum is not the expected burn — it is the best case you will rarely hit.
 
 Plan against the inflated figure instead: `planned_total ≈ 30k + 1.5 × Σ (action × cost)`.
 
@@ -178,8 +178,8 @@ The multiplier rides on the growth only; the 30k baseline is clean, start-pinned
 
 The 1.5× is the current working figure, not a measured constant. The first full coordinator run measured end to end exposed where it holds and where it does not:
 
-- Where the floor action list was **complete**, 1.5× was about right or even conservative: a Tap whose burn was one cleanly-measured 675-line read came in at 89.8k against a ~90k prediction — accurate, because the read anchor is trustworthy and nothing was missing from the list.
-- Where the floor action list was **incomplete**, 1.5× did not save the estimate — because a multiplier on a missing line is still zero. The Reader was rated ~74k inflated and ran to 111.6k; the gap was not variance, it was an action type left off the floor entirely (the six-artifact write was budgeted at a flat ~6k instead of by content volume — see the write formula in section 5). The same pattern hit long-lived glance-loop orchestrators whose per-wakeup prompt re-injection and status recaps were never on the action list at all.
+- Where the floor action list was **complete**, 1.5× was about right or even conservative: a single-read worker whose burn was one cleanly-measured 675-line read came in at 89.8k against a ~90k prediction — accurate, because the read anchor is trustworthy and nothing was missing from the list.
+- Where the floor action list was **incomplete**, 1.5× did not save the estimate — because a multiplier on a missing line is still zero. The reader leaf was rated ~74k inflated and ran to 111.6k; the gap was not variance, it was an action type left off the floor entirely (the six-artifact write was budgeted at a flat ~6k instead of by content volume — see the write formula in section 5). The same pattern hit long-lived glance-loop orchestrators whose per-wakeup prompt re-injection and status recaps were never on the action list at all.
 
 Lesson: **the multiplier covers slop on actions you named, not actions you forgot.** Before trusting 1.5×, confirm the floor list includes every write (sized by content words), every scheduled-wakeup re-injection, and every leg the session will run. A complete-but-floor list inflated by 1.5× is sound; an incomplete list inflated by any multiplier is not. Until a clean coordinator run with a complete action list re-measures the constant, treat 1.5× as the deliberate margin between the floor you can compute and the burn you will actually see — and treat a missing anchor as the larger risk.
 

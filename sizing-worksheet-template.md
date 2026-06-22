@@ -1,6 +1,6 @@
 ---
-doc: BA1 per-orchestration sizing worksheet (template — copy per role)
-audience: a planner authoring or troubleshooting a BA1 orchestration (and the product owner reviewing it)
+doc: per-orchestration sizing worksheet (template — copy per role)
+audience: a planner authoring or troubleshooting an orchestration (and the product owner reviewing it)
 status: living
 ---
 # Sizing Worksheet — Template
@@ -19,8 +19,8 @@ Read it straight:
 
 ## How to use it
 
-1. One worksheet per orchestration, named `<Role>-sizing.md`, living in `Context planning/` (e.g. `Context planning/Auditor-sizing.md`). Copy this template, fill the table, keep the file.
-2. One row per distinct session **shape**, not per instance. Twelve identical Mergers are one row with an instance count of 12; a coordinator that runs as two distinct sessions across its life is two rows.
+1. One worksheet per orchestration, named `<Role>-sizing.md`, living in `Context planning/` (e.g. `Context planning/Coordinator-sizing.md`). Copy this template, fill the table, keep the file.
+2. One row per distinct session **shape**, not per instance. Twelve identical merge workers are one row with an instance count of 12; a coordinator that runs as two distinct sessions across its life is two rows.
 3. Compute each row's **floor growth** as Σ(action × cost) using the per-action anchors in `context-budget-model.md` §4–5. This is the raw, optimistic sum.
 4. Compute the **inflated** figure as `30k + 1.5 × floor growth` — baseline plus the variance multiplier riding on growth only (never on the baseline). Judge the row against the **70k switch target**, not against the bare floor.
 5. Assign the verdict: ✅ comfortably under 70k · ⚠️ within ~5k of 70k (in band, but watch it) · ❌ over.

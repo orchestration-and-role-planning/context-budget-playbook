@@ -99,7 +99,7 @@
  * session sits in. Batons are RETAINED for manual review: the replacement reads its
  * predecessor's note but deletes nothing, and the 24h janitor sweep is held off too
  * (toggle RETAIN_BATONS to restore the old auto-cleanup). The product's own
- * "handoffs" folders (e.g. the Auditor's spec handoffs) are a different system and
+ * "handoffs" folders (e.g. a project's own 'handoffs' folder) are a different system and
  * are never touched by this hook.
  *
  * The hard zone is IDEMPOTENT about the note. A session that already wrote a valid
@@ -336,8 +336,8 @@ function computeTokens(transcriptPath) {
 // sitting in. We find the root by walking up from cwd to the nearest ancestor
 // holding a `.claude` or `.git` marker (HOME is skipped, since ~/.claude would
 // otherwise masquerade as a project root). The dotted name keeps the folder
-// hidden and distinct from any project's own "handoffs" folder (e.g. the
-// Auditor's spec handoffs). Falls back gracefully when no root is found.
+// hidden and distinct from any project's own "handoffs" folder. Falls back
+// gracefully when no root is found.
 function projectRoot(startDir) {
   let dir = startDir;
   for (let i = 0; i < 40 && dir; i++) {

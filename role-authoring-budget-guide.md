@@ -1,5 +1,5 @@
 ---
-doc: BA1 role-authoring budget guide
+doc: role-authoring budget guide
 audience: an agent that FIXES or CREATES a pipeline role doc, wave plan, or kickoff prompt
 status: living
 ---
@@ -70,7 +70,7 @@ The shape is always the same: replace an open-ended, budget-conditional, or unre
 
 ## The structural toolkit
 
-BA1's proven primitives — the bare-instruction vocabulary that keeps a session under budget and off the improvising path. Reach for these when you translate.
+These proven primitives — the bare-instruction vocabulary that keeps a session under budget and off the improvising path. Reach for these when you translate.
 
 - **Lead-never-reads-heavy.** A coordinator reads only its light startup set, compact digests, and disk markers — never the corpus, a full handoff, or leaf/merged findings. Disk glances are existence checks (Glob), not content reads.
 - **Spawn cap + successor instance.** A session spawns at most a fixed number of children; beyond the cap it hands to a fresh successor instance of itself via the disk-marker survival pattern (fire-and-forget spawns + schedule_wakeup + marker glances). The count is fixed in the doc; the agent never tallies it against a budget.
