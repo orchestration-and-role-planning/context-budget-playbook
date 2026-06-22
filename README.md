@@ -8,4 +8,4 @@ A small set of working docs on context-budgeting and session-sizing — the meth
 - **[sizing-worksheet-template.md](./sizing-worksheet-template.md)** — a copy-per-orchestration worksheet for doing the budget math before you launch anything.
 - **[role-authoring-budget-guide.md](./role-authoring-budget-guide.md)** — how to write pipeline role docs so sessions stay under budget without ever self-monitoring.
 - **[cross-session-context-discipline.md](./cross-session-context-discipline.md)** — how a multi-session topology (spawners, collectors, doers) stays under budget by design.
-- **[context-tripwire-hook.md](./context-tripwire-hook.md)** — reference for the four-stage hook that forces a clean handoff before quality degrades.
+- **[context-tripwire-hook.md](./context-tripwire-hook.md)** — reference for the four-stage hook that forces a clean handoff before quality degrades. The runnable hook itself ships alongside it as **[context-tripwire.js](./context-tripwire.js)** (a Claude Code hook; drop it in `~/.claude/hooks/` and wire it up per the reference).
